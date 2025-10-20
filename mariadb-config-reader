@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# MariaDB Configuration Parameter Reader
+# Liest Parameter aus der MariaDB-Konfiguration ohne Datenbankzugriff
+
+PARAMETER=""
+SHOW_ALL=false
+
+function usage() {
+    echo "MariaDB Konfigurationsparameter auslesen"
+    echo ""
+    echo "mariadb-config-reader [OPTIONEN]"
+    echo "  -h --help              Diese Hilfe anzeigen"
+    echo "  -p --parameter=NAME    Bestimmten Parameter auslesen"
+    echo "  -a --all              Alle Parameter formatiert anzeigen"
+    echo ""
+    echo "Beispiele:"
+    echo "  mariadb-config-reader -p wsrep_node_name"
+    echo "  mariadb-config-reader -p wsrep_cluster_address"
+    echo "  mariadb-config-reader -p innodb_buffer_pool_size"
+    echo "  mariadb-config-reader --all"
+    echo ""
+}
+
+function get_parameter() {
+    local param_name="$1"
+    
+    # MariaDB-Konfiguration abrufen und nach Parameter suchen
+    mariadbd --print-defaults 2>/dev/null | tr ' ' '\n' | grep "^--${param_name}=" | cut -d'=' -f2-
+}
+
+function show_all_parameters() {
+    echo "=== MariaDB Konfigurationsparameter ==="
+    echo ""
+    
+    # Alle Parameter extrahieren und formatiert anzeigen
+    mariadbd --print-defaults 2>/dev/null | tr ' ' '\n' | grep '^--' | while read -r param; do
+        if [[ "$param" == --*=* ]]; then
+            param_name=$(echo "$param" | cut -d'=' -f1 | sed 's/^--//')
+            param_value=$(echo "$param" | cut -d'=' -f2-)
+            printf "%-30s = %s\n" "$param_name" "$param_value"
+        else
+            param_name=$(echo "$param" | sed 's/^--//')
+            printf "%-30s = %s\n" "$param_name" "ON"
+        fi
+    done | sort
+}
+
+function get_galera_info() {
+    echo "=== Galera Cluster Information ==="
+    echo ""
+    
+    echo "Node Name:        $(get_parameter wsrep_node_name)"
+    echo "Node Address:     $(get_parameter wsrep_node_address)"
+    echo "Cluster Name:     $(get_parameter wsrep_cluster_name)"
+    echo "Cluster Address:  $(get_parameter wsrep_cluster_address)"
+    echo "SST Method:       $(get_parameter wsrep_sst_method)"
+    echo "SST Donor:        $(get_parameter wsrep_sst_donor)"
+    echo "Provider:         $(get_parameter wsrep_provider)"
+    echo "Notify Command:   $(get_parameter wsrep_notify_cmd)"
+    echo ""
+}
+
+# Parameter verarbeiten
+while [ "$1" != "" ]; do
+    PARAM=$(echo $1 | awk -F= '{print $1}')
+    VALUE=$(echo $1 | awk -F= '{print $2}')
+    
+    case $PARAM in
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        -p | --parameter)
+            if [ "$VALUE" != "" ]; then
+                PARAMETER="$VALUE"
+            else
+                PARAMETER="$2"
+                shift
+            fi
+            ;;
+        -a | --all)
+            SHOW_ALL=true
+            ;;
+        --galera)
+            get_galera_info
+            exit 0
+            ;;
+        *)
+            echo "Unbekannter Parameter: $PARAM"
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+# Prüfen ob mariadbd verfügbar ist
+if ! command -v mariadbd &> /dev/null; then
+    echo "Fehler: mariadbd ist nicht verfügbar. Ist MariaDB installiert?"
+    exit 1
+fi
+
+# Aktionen ausführen
+if [ "$SHOW_ALL" = true ]; then
+    show_all_parameters
+elif [ "$PARAMETER" != "" ]; then
+    result=$(get_parameter "$PARAMETER")
+    if [ "$result" != "" ]; then
+        echo "$result"
+    else
+        echo "Parameter '$PARAMETER' nicht gefunden oder nicht gesetzt."
+        exit 1
+    fi
+else
+    echo "Keine Aktion angegeben. Verwenden Sie -h für Hilfe."
+    usage
+    exit 1
+fi

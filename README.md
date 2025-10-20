@@ -51,3 +51,87 @@ Weitere verfügbare Optionen:
 - `--haproxystat=IP` - HAProxy Statistik Port
 - `--clusterchk=IP` - Cluster Check Port
 - `--zabbixclient=IP` - Zabbix Monitoring Ports
+
+### slack-cluster-messages
+
+Das `slack-cluster-messages` Script sendet Cluster-Status-Updates an einen Slack-Channel.
+
+#### Installation mit curl
+
+```bash
+# Download und Installation in /usr/local/bin
+sudo curl -o /usr/local/bin/slack-cluster-messages https://raw.githubusercontent.com/tualo/shell-helpers/main/slack-cluster-messages
+
+# Ausführbar machen
+sudo chmod +x /usr/local/bin/slack-cluster-messages
+```
+
+#### Konfiguration
+
+Setzen Sie die Slack-Webhook-URL als Umgebungsvariable:
+
+```bash
+# Einmalig oder in ~/.bashrc / ~/.zshrc hinzufügen
+export SLACK_WEBHOOK_URL='https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+```
+
+#### Verwendung
+
+```bash
+# Cluster-Status-Update senden
+slack-cluster-messages --status="online" --uuid="cluster-uuid-123" --primary="node1" --index="1" --members="3"
+
+# Beispiel für Cluster-Warnung
+slack-cluster-messages --status="warning" --uuid="cluster-uuid-123" --primary="node2" --index="2" --members="2"
+```
+
+Parameter:
+- `--status` - Status des Clusters (z.B. "online", "warning", "error")
+- `--uuid` - Cluster UUID
+- `--primary` - Primärer Knoten
+- `--index` - Index des Knotens
+- `--members` - Anzahl der Cluster-Mitglieder
+
+### mariadb-config-reader
+
+Das `mariadb-config-reader` Script liest MariaDB-Konfigurationsparameter aus, ohne dass eine Datenbankverbindung erforderlich ist.
+
+#### Installation mit curl
+
+```bash
+# Download und Installation in /usr/local/bin
+sudo curl -o /usr/local/bin/mariadb-config-reader https://raw.githubusercontent.com/tualo/shell-helpers/main/mariadb-config-reader
+
+# Ausführbar machen
+sudo chmod +x /usr/local/bin/mariadb-config-reader
+```
+
+#### Verwendung
+
+```bash
+# Hilfe anzeigen
+mariadb-config-reader --help
+
+# Bestimmten Parameter auslesen
+mariadb-config-reader -p wsrep_node_name
+mariadb-config-reader -p wsrep_cluster_address
+mariadb-config-reader -p innodb_buffer_pool_size
+
+# Alle Parameter formatiert anzeigen
+mariadb-config-reader --all
+
+# Galera Cluster Informationen anzeigen
+mariadb-config-reader --galera
+```
+
+Parameter:
+- `-p, --parameter=NAME` - Bestimmten Parameter auslesen
+- `-a, --all` - Alle Parameter formatiert anzeigen
+- `--galera` - Galera Cluster spezifische Informationen
+- `-h, --help` - Hilfe anzeigen
+
+Das Script ist besonders nützlich für:
+- Automatisierte Scripts die Konfigurationswerte benötigen
+- Debugging von MariaDB-Konfigurationen
+- Cluster-Management und Monitoring
+- CI/CD-Pipelines für Datenbankdeployments

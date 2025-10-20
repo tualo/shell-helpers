@@ -1,0 +1,82 @@
+#!/bin/bash
+
+STATUS="not given"
+CLUSTER_UUID="not given"
+INDEX="not given"
+MEMBERS="not given"
+PRIMARY="not given"
+
+# COM=status_update # not a configuration change by default
+while [ $# -gt 0 ]
+do
+   case $1 in
+      --status)
+         STATUS=$2
+         shift
+         ;;
+      --uuid)
+         CLUSTER_UUID=$2
+         shift
+         ;;
+      --primary)
+ 	 PRIMARY=$2
+         shift
+         ;;
+      --index)
+         INDEX=$2
+         shift
+         ;;
+      --members)
+         MEMBERS=$2
+         shift
+         ;;
+         esac
+         shift
+done
+
+json=$(cat <<EOF
+{
+  "text": "Clusterupdate ($STATUS)",
+  "blocks": [
+        {
+                "type": "header",
+                "text": {
+                        "type": "plain_text",
+                        "text": "Clusterupdate"
+                }
+        },
+        {
+                "type": "section",
+                "fields": [
+                        {
+                                "type": "mrkdwn",
+                                "text": "*Status:*\n$STATUS"
+                        },
+                        {
+                                "type": "mrkdwn",
+                                "text": "*Primary:*\n$PRIMARY"
+                        },
+                        {
+                                "type": "mrkdwn",
+                                "text": "*Index:*\n$INDEX"
+                        },
+                        {
+                                "type": "mrkdwn",
+                                "text": "*Uuid:*\n$CLUSTER_UUID"
+                        } 
+                ]
+        }
+   ]
+}
+EOF
+)
+
+# Prüfen ob SLACK_WEBHOOK_URL gesetzt ist
+if [ -z "$SLACK_WEBHOOK_URL" ]; then
+    echo "Fehler: Die Umgebungsvariable SLACK_WEBHOOK_URL ist nicht gesetzt!"
+    echo "Setzen Sie die Variable mit: export SLACK_WEBHOOK_URL='https://hooks.slack.com/services/YOUR/WEBHOOK/URL'"
+    exit 1
+fi
+
+echo $json
+curl -X POST -H 'Content-type: application/json' --data "$json" "$SLACK_WEBHOOK_URL"
