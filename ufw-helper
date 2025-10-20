@@ -1,0 +1,210 @@
+#!/bin/bash
+COMMENT=""
+COMMAND=""
+CLIENTIP="127.0.0.1"
+function usage()
+{
+    echo "add ufw firewall rules"
+    echo ""
+    echo "ufw-helper"
+    echo "  -h --help"
+    echo "  --webserver"
+    echo "  --mailserver"
+    echo "  --mysqlclient=$CLIENTIP"
+    echo "  --haproxystat=$CLIENTIP"
+    echo "  --httpclient=$CLIENTIP"
+    echo "  --redisclient=$CLIENTIP"
+    echo "  --clusternode=$CLIENTIP"
+    echo "  --sshclient=$CLIENTIP"
+    echo "  --clusterchk=$CLIENTIP"
+    echo "  --zabbix=$CLIENTIP"
+    echo ""
+}
+
+
+function webserver()
+{
+  #https
+  ufw allow 443 "$COMMENT"
+  #http
+  ufw allow 80 "$COMMENT"
+}
+
+function sshclient()
+{
+  ufw allow proto tcp from $CLIENTIP to any port 22 comment "$COMMENT"
+}
+
+function haproxystat()
+{
+  ufw allow proto tcp from $CLIENTIP to any port 8404 comment "$COMMENT"
+}
+
+function redisclient()
+{
+  ufw allow proto tcp from $CLIENTIP to any port 26379,6379 comment "$COMMENT"
+}
+
+function httpclient()
+{
+  ufw allow proto tcp from $CLIENTIP to any port 80,443 comment "$COMMENT"
+}
+
+function zabbixclient()
+{
+  ufw allow proto tcp from $CLIENTIP to any port 10051,10050 comment "$COMMENT"
+}
+
+function mailserver()
+{
+  #pop3s
+  ufw allow 995 comment "$COMMENT"
+  #imaps
+  ufw allow 993 comment "$COMMENT"
+  #submission
+  ufw allow 587 comment "$COMMENT"
+  #smtps
+  ufw allow 465 comment "$COMMENT"
+  #imap
+  ufw allow 143 comment "$COMMENT"
+  #pop3
+  ufw allow 110 comment "$COMMENT"
+  #smtp
+  ufw allow 25 comment "$COMMENT"
+}
+
+
+function clusternode()
+{
+
+  mysqlclient
+  # 4567 For Galera Cluster replication traffic, multicast replication uses both UDP transport and TCP on this port.
+  # 4568 For Incremental State Transfer.
+  # 4444 For all other State Snapshot Transfer.
+  ufw allow proto tcp from $CLIENTIP to any port 4567,4568,4444 comment "$COMMENT"
+  ufw allow proto udp from $CLIENTIP to any port 4567 comment "$COMMENT"
+
+}
+
+
+function mysqlclient()
+{
+  # 3306 For MySQL client connections and State Snapshot Transfer that use the mysqldump method.
+  ufw allow proto tcp from $CLIENTIP to any port 3306 comment "$COMMENT"
+  ufw allow proto tcp from $CLIENTIP to any port 3307 comment "$COMMENT"
+}
+
+function clusterchk()
+{
+  ufw allow proto tcp from $CLIENTIP to any port 9999 comment "$COMMENT"
+}
+
+
+# allways allow ssh access
+# ssh
+# ufw allow 22
+
+
+
+while [ "$1" != "" ]; do
+    PARAM=`echo $1 | awk -F= '{print $1}'`
+    VALUE=`echo $1 | awk -F= '{print $2}'`
+    case $PARAM in
+        -h | --help)
+            usage
+            exit
+            ;;
+        --webserver)
+            CLIENTIP=$VALUE
+            COMMAND="webserver"
+            ;;
+        --mailserver)
+            CLIENTIP=$VALUE
+            COMMAND="mailserver"
+            ;;
+        --mysqlclient)
+            CLIENTIP=$VALUE
+            COMMAND="mysqlclient"
+            ;;
+        --clusternode)
+            CLIENTIP=$VALUE
+            COMMAND="clusternode"
+            ;;
+        --sshclient)
+            CLIENTIP=$VALUE
+            COMMAND="sshclient"
+            ;;
+        --redisclient)
+            CLIENTIP=$VALUE
+            COMMAND="redisclient"
+            ;;
+        --httpclient)
+            CLIENTIP=$VALUE
+            COMMAND="httpclient"
+            ;;
+        --zabbixclient)
+            CLIENTIP=$VALUE
+            COMMAND="zabbixclient"
+            ;;
+        --clusterchk)
+            CLIENTIP=$VALUE
+            COMMAND="clusterchk"
+            ;;
+        --haproxystat)
+            CLIENTIP=$VALUE
+            COMMAND="haproxystat"
+            ;;
+        --comment)
+            COMMENT=$VALUE
+            ;;
+        *)
+            echo "ERROR: unknown parameter \"$PARAM\""
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+
+if command -v dig >/dev/null 2>&1; then
+  USEIP=$(dig +short "$CLIENTIP" | head -1)
+else
+  echo "dig ist nicht installiert. Auf Debian/Ubuntu installieren mit: sudo apt-get update && sudo apt-get install -y dnsutils" >&2
+  USEIP=""
+fi
+
+if [ "$USEIP" != "" ]; then
+CLIENTIP=$USEIP
+fi
+if [ "$COMMAND" = "webserver" ]; then
+        webserver
+fi
+if [ "$COMMAND" = "mailserver" ]; then
+        mailserver
+fi
+if [ "$COMMAND" = "clusternode" ]; then
+        clusternode
+fi
+if [ "$COMMAND" = "mysqlclient" ]; then
+        mysqlclient
+fi
+if [ "$COMMAND" = "sshclient" ]; then
+        sshclient
+fi
+if [ "$COMMAND" = "redisclient" ]; then
+	      redisclient
+fi
+if [ "$COMMAND" = "httpclient" ]; then
+        httpclient
+fi
+if [ "$COMMAND" = "zabbixclient" ]; then
+        zabbixclient
+fi
+if [ "$COMMAND" = "clusterchk" ]; then
+        clusterchk
+fi
+if [ "$COMMAND" = "haproxystat" ]; then
+        haproxystat
+fi
+ufw status
