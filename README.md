@@ -152,10 +152,13 @@ sudo chmod +x /etc/ssh/login-notify
 
 #### Konfiguration
 
-1. **Umgebungsvariable setzen:**
+1. **Konfigurationsdatei erstellen:**
 ```bash
-# In /etc/environment oder systemweit
-export SLACK_WEBHOOK_NOTIFY_URL='https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+# Slack-Webhook-URL in Konfigurationsdatei speichern
+echo 'SLACK_WEBHOOK_NOTIFY_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL' | sudo tee /etc/ssh/login-notify.conf
+
+# Berechtigungen setzen (nur root lesbar für Sicherheit)
+sudo chmod 600 /etc/ssh/login-notify.conf
 ```
 
 2. **PAM konfigurieren:**

@@ -1,9 +1,22 @@
 #!/bin/bash
 
+# Konfigurationsdatei für Slack-Webhook
+CONFIG_FILE="/etc/ssh/login-notify.conf"
+
+# Prüfen ob Konfigurationsdatei existiert
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Fehler: Konfigurationsdatei $CONFIG_FILE nicht gefunden!"
+    echo "Erstellen Sie die Datei mit:"
+    echo "echo 'SLACK_WEBHOOK_NOTIFY_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL' | sudo tee $CONFIG_FILE"
+    exit 1
+fi
+
+# Konfiguration laden
+source "$CONFIG_FILE"
+
 # Prüfen ob SLACK_WEBHOOK_NOTIFY_URL gesetzt ist
 if [ -z "$SLACK_WEBHOOK_NOTIFY_URL" ]; then
-    echo "Fehler: Die Umgebungsvariable SLACK_WEBHOOK_NOTIFY_URL ist nicht gesetzt!"
-    echo "Setzen Sie die Variable mit: export SLACK_WEBHOOK_NOTIFY_URL='https://hooks.slack.com/services/YOUR/WEBHOOK/URL'"
+    echo "Fehler: SLACK_WEBHOOK_NOTIFY_URL ist in $CONFIG_FILE nicht gesetzt!"
     exit 1
 fi
 
