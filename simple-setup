@@ -1,0 +1,15 @@
+#!/bin/bash
+
+apt update 
+apt install -y nano htop ufw \
+    mc \
+    dnsutils \
+    htop \
+    mariadb-server \
+    mariadb-backup \
+    redis \
+    php \
+    php-mysql
+
+
+

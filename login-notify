@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Prüfen ob SLACK_WEBHOOK_NOTIFY_URL gesetzt ist
+if [ -z "$SLACK_WEBHOOK_NOTIFY_URL" ]; then
+    echo "Fehler: Die Umgebungsvariable SLACK_WEBHOOK_NOTIFY_URL ist nicht gesetzt!"
+    echo "Setzen Sie die Variable mit: export SLACK_WEBHOOK_NOTIFY_URL='https://hooks.slack.com/services/YOUR/WEBHOOK/URL'"
+    exit 1
+fi
+
+host="`hostname`"
+INFO=`mariadb-config-reader --galera 2>/dev/null || echo ""`
+subject="SSH Login: $PAM_USER from $PAM_RHOST $INFO on $host"
+json="{\"text\":\"$subject\"}"
+curl -X POST -H 'Content-type: application/json' --data "$json" "$SLACK_WEBHOOK_NOTIFY_URL"
+
+
+# /etc/pam.d/sshd
+# Notify Login
+# session optional pam_exec.so seteuid /etc/ssh/login-notify
+

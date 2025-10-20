@@ -135,3 +135,51 @@ Das Script ist besonders nützlich für:
 - Debugging von MariaDB-Konfigurationen
 - Cluster-Management und Monitoring
 - CI/CD-Pipelines für Datenbankdeployments
+
+### login-notify
+
+Das `login-notify` Script sendet Benachrichtigungen über SSH-An- und Abmeldungen an einen Slack-Channel. Es wird über PAM (Pluggable Authentication Modules) bei SSH-Logins ausgeführt.
+
+#### Installation mit curl
+
+```bash
+# Download und Installation in /etc/ssh/
+sudo curl -o /etc/ssh/login-notify https://raw.githubusercontent.com/tualo/shell-helpers/main/login-notify
+
+# Ausführbar machen
+sudo chmod +x /etc/ssh/login-notify
+```
+
+#### Konfiguration
+
+1. **Umgebungsvariable setzen:**
+```bash
+# In /etc/environment oder systemweit
+export SLACK_WEBHOOK_NOTIFY_URL='https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+```
+
+2. **PAM konfigurieren:**
+Fügen Sie diese Zeile in `/etc/pam.d/sshd` hinzu:
+```bash
+# Am Ende der Datei hinzufügen
+session optional pam_exec.so seteuid /etc/ssh/login-notify
+```
+
+#### Funktionalität
+
+Das Script:
+- Erfasst SSH-Login-Ereignisse automatisch
+- Sendet Benachrichtigungen mit Benutzername, IP-Adresse und Hostname
+- Integriert Galera Cluster-Informationen (falls verfügbar)
+- Verwendet PAM-Umgebungsvariablen (`$PAM_USER`, `$PAM_RHOST`)
+
+#### Beispiel-Benachrichtigung
+```
+SSH Login: admin from 192.168.1.100 Node Name: cluster01 on webserver01
+```
+
+Das Script ist ideal für:
+- Sicherheitsmonitoring von SSH-Zugriffen
+- Tracking von Administrator-Logins
+- Cluster-Node Überwachung
+- Compliance und Audit-Anforderungen
