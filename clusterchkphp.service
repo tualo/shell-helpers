@@ -1,0 +1,17 @@
+[Unit]
+# /etc/systemd/system/clusterchkphp.service
+Description=Clustercheck PHP Server
+After=mariadb.service
+
+[Service]
+Type=simple
+ExecStart=php -S 0.0.0.0:9999 /root/scripts/clusterchk.php
+# TimeoutStopSec=5
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target

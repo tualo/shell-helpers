@@ -186,3 +186,82 @@ Das Script ist ideal für:
 - Tracking von Administrator-Logins
 - Cluster-Node Überwachung
 - Compliance und Audit-Anforderungen
+
+### clusterchk
+
+Der `clusterchk` Service ist ein PHP-basierter HTTP-Health-Check für Galera MariaDB Cluster. Er stellt einen einfachen HTTP-Endpoint auf Port 9999 bereit, um den Cluster-Status zu überwachen.
+
+#### Installation mit curl
+
+```bash
+# Download der PHP-Datei
+sudo curl -o /usr/local/bin/clusterchk.php https://raw.githubusercontent.com/tualo/shell-helpers/main/clusterchk.php
+
+# Download der systemd Service-Datei
+sudo curl -o /etc/systemd/system/clusterchkphp.service https://raw.githubusercontent.com/tualo/shell-helpers/main/clusterchkphp.service
+
+# Service-Datei anpassen (Pfad zur PHP-Datei korrigieren)
+sudo sed -i 's|/root/scripts/clusterchk.php|/usr/local/bin/clusterchk.php|' /etc/systemd/system/clusterchkphp.service
+```
+
+#### Konfiguration
+
+1. **MariaDB Benutzer für Health Check erstellen:**
+```sql
+-- In MariaDB/MySQL ausführen
+CREATE USER 'checkuser'@'localhost';
+GRANT PROCESS ON *.* TO 'checkuser'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+2. **Service aktivieren und starten:**
+```bash
+# systemd neu laden
+sudo systemctl daemon-reload
+
+# Service aktivieren (automatischer Start beim Boot)
+sudo systemctl enable clusterchkphp.service
+
+# Service starten
+sudo systemctl start clusterchkphp.service
+
+# Status prüfen
+sudo systemctl status clusterchkphp.service
+```
+
+#### Verwendung
+
+```bash
+# Health Check testen
+curl http://localhost:9999
+
+# Beispiel-Antworten:
+# Bei gesundem Cluster: HTTP 200 OK mit "Synced"
+# Bei Problemen: HTTP 503 Service Temporarily Unavailable
+```
+
+#### Funktionalität
+
+Der Service:
+- Läuft als HTTP-Server auf Port 9999
+- Prüft `wsrep_local_state_comment` Status
+- Antwortet mit HTTP 200 wenn Cluster "Synced" ist
+- Antwortet mit HTTP 503 bei Cluster-Problemen
+- Zeigt MariaDB-Serverinfo und Sync-Status an
+
+#### Integration mit Load Balancern
+
+Ideal für:
+- **HAProxy** Health Checks
+- **nginx** upstream Monitoring  
+- **Kubernetes** readiness/liveness Probes
+- **Docker** Health Checks
+
+Beispiel HAProxy-Konfiguration:
+```
+backend galera_cluster
+    option httpchk GET /
+    server node1 192.168.1.10:3306 check port 9999
+    server node2 192.168.1.11:3306 check port 9999
+    server node3 192.168.1.12:3306 check port 9999
+```

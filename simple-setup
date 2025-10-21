@@ -1,10 +1,26 @@
 #!/bin/bash
 
 apt update 
-apt install -y nano htop ufw \
-    mc \
-    dnsutils \
-    htop \
+
+
+curl -o /usr/local/bin/ufw-helper https://raw.githubusercontent.com/tualo/shell-helpers/main/ufw-helper
+chmod +x /usr/local/bin/ufw-helper
+
+curl -o /usr/local/bin/slack-cluster-messages https://raw.githubusercontent.com/tualo/shell-helpers/main/slack-cluster-messages
+chmod +x /usr/local/bin/slack-cluster-messages
+
+# setup slack environment
+
+
+curl -o /usr/local/bin/mariadb-config-reader https://raw.githubusercontent.com/tualo/shell-helpers/main/mariadb-config-reader
+chmod +x /usr/local/bin/mariadb-config-reader
+
+
+apt install -y nano htop ufw dnsutils
+
+# setup ufw rules
+
+apt install -y mc \
     mariadb-server \
     mariadb-backup \
     redis \
